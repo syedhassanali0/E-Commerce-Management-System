@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopEase — Cart</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="nav"></div>
+
+  <main class="container section">
+    <h2>Your cart</h2>
+    <div id="msg"></div>
+    <div id="cart"></div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© 2026 ShopEase — OSSD Final Semester Project</div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    renderNav("cart");
+    if (!requireLogin()) { /* redirects */ }
+    const user = getUser();
+
+    async function loadCart() {
+      const box = document.getElementById("cart");
+      try {
+        const items = await api("/cart/" + user.id);
+        if (!items.length) { box.innerHTML = '<p class="empty">Your cart is empty. <a href="products.html">Shop now</a></p>'; return; }
+
+        let total = 0;
+        const rows = items.map(it => {
+          const price = it.product ? it.product.price : 0;
+          const name = it.product ? it.product.name : ("Product #" + it.product_id);
+          const sub = price * it.quantity;
+          total += sub;
+          return `<tr>
+            <td>${name}</td>
+            <td>${money(price)}</td>
+            <td>
+              <input type="number" min="1" value="${it.quantity}" style="width:70px;padding:6px"
+                     onchange="updateQty(${it.id}, this.value)" />
+            </td>
+            <td>${money(sub)}</td>
+            <td><button class="btn small danger" onclick="removeItem(${it.id})">Remove</button></td>
+          </tr>`;
+        }).join("");
+
+        box.innerHTML = `
+          <table>
+            <tr><th>Product</th><th>Price</th><th>Qty</th><th>Subtotal</th><th></th></tr>
+            ${rows}
+            <tr><td colspan="3"></td><td><strong>${money(total)}</strong></td><td></td></tr>
+          </table>
+          <div class="mt center">
+            <button class="btn amber" onclick="placeOrder()">Place order</button>
+          </div>`;
+        window._cartItems = items;
+      } catch (e) {
+        box.innerHTML = `<p class="empty">${e.message}</p>`;
+      }
+    }
+
+    async function updateQty(cartId, qty) {
+      qty = parseInt(qty) || 1;
+      try { await api("/cart/" + cartId, { method: "PUT", body: { quantity: qty } }); loadCart(); }
+      catch (e) { showMsg(e.message, false); }
+    }
+
+    async function removeItem(cartId) {
+      try { await api("/cart/" + cartId, { method: "DELETE" }); loadCart(); }
+      catch (e) { showMsg(e.message, false); }
+    }
+
+    async function placeOrder() {
+      const items = (window._cartItems || []).map(it => ({ product_id: it.product_id, quantity: it.quantity }));
+      if (!items.length) return;
+      try {
+        const order = await api("/orders", { method: "POST", body: { user_id: user.id, items } });
+        showMsg("Order #" + order.id + " placed successfully!", true);
+        setTimeout(() => window.location.href = "orders.html", 900);
+      } catch (e) { showMsg(e.message, false); }
+    }
+
+    function showMsg(text, ok) {
+      document.getElementById("msg").innerHTML = `<div class="alert ${ok ? "ok" : "error"}">${text}</div>`;
+    }
+
+    loadCart();
+  </script>
+</body>
+</html>

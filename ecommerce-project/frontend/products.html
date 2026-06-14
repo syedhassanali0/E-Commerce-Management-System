@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopEase — Products</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="nav"></div>
+
+  <main class="container section">
+    <h2>All products</h2>
+
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Search products..." />
+      <select id="category"><option value="">All categories</option></select>
+      <button class="btn" onclick="loadProducts()">Apply</button>
+    </div>
+
+    <div id="msg"></div>
+    <div id="products" class="grid"></div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© 2026 ShopEase — OSSD Final Semester Project</div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    renderNav("products");
+
+    async function loadCategories() {
+      try {
+        const cats = await api("/categories");
+        const sel = document.getElementById("category");
+        cats.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.id; opt.textContent = c.category_name;
+          sel.appendChild(opt);
+        });
+      } catch (e) { /* ignore */ }
+    }
+
+    async function loadProducts() {
+      const box = document.getElementById("products");
+      const search = document.getElementById("search").value.trim();
+      const cat = document.getElementById("category").value;
+      let path = "/products?";
+      if (search) path += "search=" + encodeURIComponent(search) + "&";
+      if (cat) path += "category_id=" + cat;
+
+      box.innerHTML = '<p class="muted">Loading…</p>';
+      try {
+        const products = await api(path);
+        if (!products.length) { box.innerHTML = '<p class="empty">No products found.</p>'; return; }
+        box.innerHTML = products.map(p => `
+          <div class="product-card">
+            <div class="product-thumb">${productIcon()}</div>
+            <div class="product-body">
+              <h3>${p.name}</h3>
+              <div class="price">${money(p.price)}</div>
+              <div class="stock">${p.stock > 0 ? p.stock + " in stock" : "Out of stock"}</div>
+              <div class="actions">
+                <a class="btn small" href="product_details.html?id=${p.id}">View</a>
+                <button class="btn small amber" ${p.stock<=0?"disabled":""} onclick="quickAdd(${p.id})">Add to cart</button>
+              </div>
+            </div>
+          </div>`).join("");
+      } catch (e) {
+        box.innerHTML = `<p class="empty">Could not load products. Is the backend running at ${API_BASE}?</p>`;
+      }
+    }
+
+    async function quickAdd(productId) {
+      if (!requireLogin()) return;
+      const user = getUser();
+      try {
+        await api("/cart", { method: "POST", body: { user_id: user.id, product_id: productId, quantity: 1 } });
+        document.getElementById("msg").innerHTML = '<div class="alert ok">Added to cart. <a href="cart.html">View cart</a></div>';
+      } catch (e) {
+        document.getElementById("msg").innerHTML = `<div class="alert error">${e.message}</div>`;
+      }
+    }
+
+    loadCategories();
+    loadProducts();
+  </script>
+</body>
+</html>

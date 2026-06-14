@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopEase — Orders</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="nav"></div>
+
+  <main class="container section">
+    <h2 id="title">Your orders</h2>
+    <div id="msg"></div>
+    <div id="orders"></div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© 2026 ShopEase — OSSD Final Semester Project</div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    renderNav("orders");
+    if (!requireLogin()) { /* redirects */ }
+    const admin = isAdmin();
+    if (admin) document.getElementById("title").textContent = "All orders (admin)";
+
+    function badge(status) {
+      const s = (status || "pending").toLowerCase();
+      return `<span class="badge ${s}">${s}</span>`;
+    }
+
+    async function loadOrders() {
+      const box = document.getElementById("orders");
+      try {
+        const orders = await api("/orders");
+        if (!orders.length) { box.innerHTML = '<p class="empty">No orders yet. <a href="products.html">Start shopping</a></p>'; return; }
+
+        const rows = orders.map(o => {
+          const itemCount = o.items ? o.items.length : 0;
+          let actions = "";
+          if (admin) {
+            actions = `
+              <select onchange="updateStatus(${o.id}, this.value)" style="padding:6px">
+                <option ${o.status==="pending"?"selected":""}>pending</option>
+                <option ${o.status==="shipped"?"selected":""}>shipped</option>
+                <option ${o.status==="delivered"?"selected":""}>delivered</option>
+              </select>
+              <button class="btn small danger" onclick="deleteOrder(${o.id})">Delete</button>`;
+          }
+          return `<tr>
+            <td>#${o.id}</td>
+            <td>${o.user_id}</td>
+            <td>${o.order_date}</td>
+            <td>${itemCount} item(s)</td>
+            <td>${money(o.total_price)}</td>
+            <td>${badge(o.status)}</td>
+            <td>${actions}</td>
+          </tr>`;
+        }).join("");
+
+        box.innerHTML = `<table>
+          <tr><th>Order</th><th>User</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr>
+          ${rows}</table>`;
+      } catch (e) {
+        box.innerHTML = `<p class="empty">${e.message}</p>`;
+      }
+    }
+
+    async function updateStatus(id, status) {
+      try { await api("/orders/" + id, { method: "PUT", body: { status } }); loadOrders(); }
+      catch (e) { showMsg(e.message); }
+    }
+    async function deleteOrder(id) {
+      try { await api("/orders/" + id, { method: "DELETE" }); loadOrders(); }
+      catch (e) { showMsg(e.message); }
+    }
+    function showMsg(t) { document.getElementById("msg").innerHTML = `<div class="alert error">${t}</div>`; }
+
+    loadOrders();
+  </script>
+</body>
+</html>

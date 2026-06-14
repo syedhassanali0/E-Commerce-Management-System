@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopEase — Login / Register</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="nav"></div>
+
+  <main class="container">
+    <div class="form card">
+      <h2 id="formTitle" class="center">Login</h2>
+      <div id="msg"></div>
+
+      <!-- LOGIN FORM -->
+      <div id="loginForm">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="loginEmail" placeholder="you@example.com" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" />
+        </div>
+        <button class="btn" style="width:100%" onclick="doLogin()">Login</button>
+        <p class="center mt muted">No account?
+          <a href="#" onclick="showRegister();return false;">Create one</a>
+        </p>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="registerForm" style="display:none">
+        <div class="field">
+          <label>Full name</label>
+          <input type="text" id="regName" placeholder="Your name" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="regEmail" placeholder="you@example.com" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="regPassword" placeholder="Choose a password" />
+        </div>
+        <div class="field">
+          <label>Account type</label>
+          <select id="regRole">
+            <option value="customer">Customer</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <button class="btn" style="width:100%" onclick="doRegister()">Create account</button>
+        <p class="center mt muted">Already have an account?
+          <a href="#" onclick="showLogin();return false;">Login</a>
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    renderNav("");
+
+    function showRegister() {
+      document.getElementById("loginForm").style.display = "none";
+      document.getElementById("registerForm").style.display = "block";
+      document.getElementById("formTitle").textContent = "Create account";
+      msg("");
+    }
+    function showLogin() {
+      document.getElementById("registerForm").style.display = "none";
+      document.getElementById("loginForm").style.display = "block";
+      document.getElementById("formTitle").textContent = "Login";
+      msg("");
+    }
+    function msg(text, ok=false) {
+      document.getElementById("msg").innerHTML = text
+        ? `<div class="alert ${ok ? "ok" : "error"}">${text}</div>` : "";
+    }
+
+    async function doLogin() {
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      if (!email || !password) return msg("Please enter email and password.");
+      try {
+        const data = await api("/login", { method: "POST", body: { email, password } });
+        saveAuth(data);
+        window.location.href = data.user.role === "admin" ? "dashboard.html" : "products.html";
+      } catch (e) { msg(e.message); }
+    }
+
+    async function doRegister() {
+      const name = document.getElementById("regName").value.trim();
+      const email = document.getElementById("regEmail").value.trim();
+      const password = document.getElementById("regPassword").value;
+      const role = document.getElementById("regRole").value;
+      if (!name || !email || !password) return msg("Please fill in all fields.");
+      try {
+        const data = await api("/register", { method: "POST", body: { name, email, password, role } });
+        saveAuth(data);
+        window.location.href = data.user.role === "admin" ? "dashboard.html" : "products.html";
+      } catch (e) { msg(e.message); }
+    }
+  </script>
+</body>
+</html>

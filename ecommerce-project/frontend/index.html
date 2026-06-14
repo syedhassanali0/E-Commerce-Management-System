@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopEase — Home</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="nav"></div>
+
+  <header class="hero">
+    <div class="container">
+      <h1>Shop smarter with <span class="amber-text">ShopEase</span></h1>
+      <p>A complete e-commerce platform — browse products, manage your cart,
+         place orders, and track them in real time. Built with FastAPI and PostgreSQL.</p>
+      <a class="btn amber" href="products.html">Browse products</a>
+    </div>
+  </header>
+
+  <main class="container section">
+    <h2>Featured products</h2>
+    <div id="featured" class="grid"></div>
+    <div class="center mt">
+      <a class="btn outline" href="products.html">View all products</a>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© 2026 ShopEase — OSSD Final Semester Project · Syed Hassan Ali (F2024408041)</div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    renderNav("home");
+
+    async function loadFeatured() {
+      const box = document.getElementById("featured");
+      try {
+        const products = await api("/products");
+        if (!products.length) { box.innerHTML = '<p class="muted">No products yet.</p>'; return; }
+        box.innerHTML = products.slice(0, 4).map(p => `
+          <div class="product-card">
+            <div class="product-thumb">${productIcon()}</div>
+            <div class="product-body">
+              <h3>${p.name}</h3>
+              <div class="price">${money(p.price)}</div>
+              <div class="stock">${p.stock > 0 ? p.stock + " in stock" : "Out of stock"}</div>
+              <div class="actions">
+                <a class="btn small" href="product_details.html?id=${p.id}">View</a>
+              </div>
+            </div>
+          </div>`).join("");
+      } catch (e) {
+        box.innerHTML = `<p class="muted">Could not load products. Is the backend running at ${API_BASE}?</p>`;
+      }
+    }
+    loadFeatured();
+  </script>
+</body>
+</html>

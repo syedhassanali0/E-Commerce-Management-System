@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopEase — About</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="nav"></div>
+
+  <main class="container section">
+    <h2>About this project</h2>
+    <div class="card">
+      <p>
+        <strong>ShopEase</strong> is an E-Commerce Management System built as the
+        final semester project for Open Source Software Development (OSSD&nbsp;–&nbsp;Y9).
+        It lets customers browse products, search and filter by category, manage a
+        shopping cart, and place orders, while administrators manage products,
+        categories, and orders from a dedicated dashboard.
+      </p>
+
+      <h3 class="mt">How it works</h3>
+      <p class="muted mt">
+        The frontend (HTML, CSS, JavaScript) talks to a FastAPI backend over a REST API.
+        The backend stores all data in a PostgreSQL database (hosted on Supabase) using
+        SQLAlchemy. Passwords are hashed with bcrypt and users stay logged in with JWT tokens.
+      </p>
+
+      <h3 class="mt">Technology stack</h3>
+      <table class="mt">
+        <tr><th>Layer</th><th>Technology</th></tr>
+        <tr><td>Frontend</td><td>HTML, CSS, JavaScript</td></tr>
+        <tr><td>Backend</td><td>FastAPI (Python)</td></tr>
+        <tr><td>Database</td><td>PostgreSQL on Supabase</td></tr>
+        <tr><td>Security</td><td>JWT authentication + bcrypt hashing</td></tr>
+        <tr><td>Deployment</td><td>Render (backend) · Vercel (frontend)</td></tr>
+      </table>
+
+      <h3 class="mt">Main features</h3>
+      <ul style="margin-left:20px" class="mt muted">
+        <li>User registration and secure login</li>
+        <li>Product listing with search and category filter</li>
+        <li>Shopping cart with quantity management</li>
+        <li>Order placement and status tracking</li>
+        <li>Admin dashboard with live sales analytics</li>
+        <li>Full CRUD operations for products, categories, and orders</li>
+      </ul>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© 2026 ShopEase — OSSD Final Semester Project · Syed Hassan Ali (F2024408041)</div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>renderNav("about");</script>
+</body>
+</html>

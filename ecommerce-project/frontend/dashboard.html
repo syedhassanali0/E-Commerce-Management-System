@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopEase — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="nav"></div>
+
+  <main class="container section">
+    <h2>Admin dashboard</h2>
+    <div id="msg"></div>
+
+    <!-- Analytics -->
+    <div id="stats" class="stats"></div>
+
+    <!-- Add product + add category -->
+    <div class="row" style="align-items:flex-start">
+      <div class="card" style="flex:2;min-width:300px">
+        <h3>Add product</h3>
+        <div class="row mt">
+          <div class="field"><label>Name</label><input id="pName" /></div>
+          <div class="field"><label>Price</label><input id="pPrice" type="number" step="0.01" /></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Stock</label><input id="pStock" type="number" /></div>
+          <div class="field"><label>Category</label><select id="pCategory"><option value="">None</option></select></div>
+        </div>
+        <div class="field"><label>Description</label><textarea id="pDesc" rows="2"></textarea></div>
+        <button class="btn" onclick="addProduct()">Add product</button>
+      </div>
+
+      <div class="card" style="flex:1;min-width:240px">
+        <h3>Add category</h3>
+        <div class="field mt"><label>Category name</label><input id="cName" /></div>
+        <button class="btn outline" onclick="addCategory()">Add category</button>
+        <div id="catList" class="mt"></div>
+      </div>
+    </div>
+
+    <!-- Manage products -->
+    <h3 class="mt" style="margin-top:36px">Manage products</h3>
+    <div id="productTable" class="mt"></div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">© 2026 ShopEase — OSSD Final Semester Project</div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    renderNav("dashboard");
+    if (!requireLogin()) { /* redirects */ }
+    if (!isAdmin()) { document.querySelector("main").innerHTML =
+      '<div class="container section"><p class="empty">Admins only. <a href="index.html">Go home</a></p></div>'; }
+
+    function showMsg(text, ok=false) {
+      document.getElementById("msg").innerHTML = `<div class="alert ${ok ? "ok" : "error"}">${text}</div>`;
+      setTimeout(() => document.getElementById("msg").innerHTML = "", 2500);
+    }
+
+    async function loadStats() {
+      try {
+        const s = await api("/dashboard");
+        const cards = [
+          ["Users", s.total_users], ["Products", s.total_products],
+          ["Orders", s.total_orders], ["Categories", s.total_categories],
+          ["Sales", money(s.total_sales)], ["Pending", s.pending_orders],
+        ];
+        document.getElementById("stats").innerHTML = cards.map(c =>
+          `<div class="stat"><div class="num">${c[1]}</div><div class="label">${c[0]}</div></div>`).join("");
+      } catch (e) { showMsg(e.message); }
+    }
+
+    async function loadCategories() {
+      try {
+        const cats = await api("/categories");
+        const sel = document.getElementById("pCategory");
+        sel.innerHTML = '<option value="">None</option>' +
+          cats.map(c => `<option value="${c.id}">${c.category_name}</option>`).join("");
+        document.getElementById("catList").innerHTML = cats.length
+          ? cats.map(c => `<span class="tag" style="margin:3px;display:inline-block">${c.category_name}</span>`).join("")
+          : '<span class="muted">No categories yet.</span>';
+      } catch (e) { /* ignore */ }
+    }
+
+    async function loadProducts() {
+      const box = document.getElementById("productTable");
+      try {
+        const products = await api("/products");
+        if (!products.length) { box.innerHTML = '<p class="muted">No products yet.</p>'; return; }
+        box.innerHTML = `<table>
+          <tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th></th></tr>
+          ${products.map(p => `<tr>
+            <td>${p.id}</td><td>${p.name}</td><td>${money(p.price)}</td><td>${p.stock}</td>
+            <td>
+              <button class="btn small outline" onclick="editStock(${p.id}, ${p.stock})">Edit stock</button>
+              <button class="btn small danger" onclick="deleteProduct(${p.id})">Delete</button>
+            </td></tr>`).join("")}
+        </table>`;
+      } catch (e) { box.innerHTML = `<p class="empty">${e.message}</p>`; }
+    }
+
+    async function addProduct() {
+      const body = {
+        name: document.getElementById("pName").value.trim(),
+        price: parseFloat(document.getElementById("pPrice").value) || 0,
+        stock: parseInt(document.getElementById("pStock").value) || 0,
+        description: document.getElementById("pDesc").value.trim(),
+        category_id: document.getElementById("pCategory").value || null,
+      };
+      if (!body.name) return showMsg("Product name is required.");
+      if (body.category_id) body.category_id = parseInt(body.category_id);
+      try {
+        await api("/products", { method: "POST", body });
+        showMsg("Product added.", true);
+        document.getElementById("pName").value = "";
+        document.getElementById("pPrice").value = "";
+        document.getElementById("pStock").value = "";
+        document.getElementById("pDesc").value = "";
+        loadProducts(); loadStats();
+      } catch (e) { showMsg(e.message); }
+    }
+
+    async function deleteProduct(id) {
+      try { await api("/products/" + id, { method: "DELETE" }); showMsg("Deleted.", true); loadProducts(); loadStats(); }
+      catch (e) { showMsg(e.message); }
+    }
+
+    async function editStock(id, current) {
+      const val = prompt("New stock quantity:", current);
+      if (val === null) return;
+      try { await api("/products/" + id, { method: "PUT", body: { stock: parseInt(val) || 0 } }); loadProducts(); }
+      catch (e) { showMsg(e.message); }
+    }
+
+    async function addCategory() {
+      const name = document.getElementById("cName").value.trim();
+      if (!name) return showMsg("Category name is required.");
+      try {
+        await api("/categories", { method: "POST", body: { category_name: name } });
+        document.getElementById("cName").value = "";
+        showMsg("Category added.", true);
+        loadCategories(); loadStats();
+      } catch (e) { showMsg(e.message); }
+    }
+
+    if (isAdmin()) { loadStats(); loadCategories(); loadProducts(); }
+  </script>
+</body>
+</html>
