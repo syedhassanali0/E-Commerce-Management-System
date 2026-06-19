@@ -7,7 +7,7 @@
    - After you deploy the backend to Render, change it to your live URL, e.g.
      const API_BASE = "https://your-app.onrender.com";
 */
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "postgresql://postgres.wythuwrupvfmpiemzsek:fXrucuPkoXXvrsoT@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres";
 
 /* ---------- Auth state (stored in the browser) ---------- */
 function saveAuth(data) {
